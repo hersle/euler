@@ -1,0 +1,93 @@
+Let's call our target sum $N$. We want to find the number of ways $N$ can be written as a sum of at least two positive integers. Another way to think about this is how many different solutions we can find to the following equation in which the $k$ variables hold non-negative integer values ($k \geq 0$):
+
+$$N = k_1 \cdot 1 + k_2 \cdot 2 + k_3 \cdot 3 + ... + k_{N-1} \cdot (N - 1)$$
+
+Notice that $k_n \cdot n$ is not included in our sum, as we are looking for the number of ways to write $N$ as the sum of [b]at least two positive integers[/b]. For example, for $N = 5$, we want to find the number of different solutions for the following equation:
+
+$$5 = k_1 \cdot 1 + k_2 \cdot 2 + k_3 \cdot 3 + k_4 \cdot 4$$
+
+Therefore, by trying all reasonable values for all the $k$ variables and counting the number of times the sum equals $N$, we find the answer to the problem. An initial attempt to solve this in C can look like this:
+
+[code=C/C++]
+#include <stdio.h>
+#include <string.h>
+
+#define N 100
+
+int counts_saved[N][N];
+
+int count(int sum, int n)
+{
+    if (sum == N)
+        return 1;
+    if (n == N)
+        return 0;
+
+    int k;
+    int c = 0;
+
+    for (k = 0; k <= (N - sum) / n; k++)
+        c += count(sum + k * n, n + 1);
+    
+    return c;
+}
+
+int main()
+{
+    printf("count = %d\n", count(0, 1));
+    return 0;
+}
+[/code]
+
+By starting with an initial sum of $0$, we start with letting $k_1$ hold all possible values for which $k_1 \cdot 1$ does not exceed $N$. For each of those values of $k_1$, we recursively call the same function, passing in our sum obtained so far ($k_1 \cdot 1$).
+
+On this next call, we try all possible values of $k_2$ for which our sum obtained so far plus $k_2 * 2$ does not exceed $N$. The maximum value that $k_2$ can hold is therefore the remaining sum to obtain a sum of $N$ ($N$ minus sum obtained so far) divided by $n = 2$. For each of these values of $k_2$, we again recursively call our function, trying all values of $k_3$, etc.
+
+Whenever our function is called with a sum that is equal to $N$, we have found one solution to our equation, and hence return $1$. Otherwise, if our sum is not equal to $N$ and $n = N$, we have not found a solution to our equation and cannot find any more since $n$ has exceeded its maximum legal value $N$. Therefore, we return $0$.
+
+Our recursive function sums the number of solutions to our equation. Now we simply print the result of our function after passing an initial sum of $0$ and $n = 1$, since we want to begin by considering all possible values of $k_1$.
+
+This program finishes immediately for values of $N$ below around $50$. In order for our program to finish quickly for higher values of $N$, we simply avoid recomputing the result of our recursive function whenever we call it with a pair of parameters that we have called it with before.
+
+Therefore, whenever our recursive function finishes, we save the value that the function returns in a table so we can look it up later, so we don't have to recompute the answer again. 
+
+Therefore, if our function receives a pair of parameters that it has received before, it simply looks up the result of this call in the table and returns it. Otherwise, we compute the value of the call "manually" and save the result in our table. This leads us to this slightly modified code:
+
+[code=C/C++]
+#include <stdio.h>
+#include <string.h>
+
+#define N 100
+
+int counts_saved[N][N];
+
+int count(int sum, int n)
+{
+    if (sum == N)
+        return 1;
+    if (n == N)
+        return 0;
+    if (saved[sum][n] != -1)
+        return saved[sum][n];
+
+    int k;
+    int c = 0;
+
+    for (k = 0; k <= (N - sum) / n; k++)
+        c += count(sum + k * n, n + 1);
+    
+    saved[sum][n] = c;
+    return c;
+}
+
+int main()
+{
+    memset(saved, -1, N * N * sizeof(int));
+    printf("count = %d\n", count(0, 1));
+    return 0;
+}
+[/code]
+
+This modified program solves for $N = 100$ instantly, simply due to its ability to look up already-computed results in a table. 
+
+This long post was written in a little hurry, but I still hope it's not too messy and serves as a good explanation of a simple and relatively easy solution to the problem. 

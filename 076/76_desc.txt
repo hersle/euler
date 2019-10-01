@@ -1,0 +1,131 @@
+Let's call our target sum N. We want to find the number of ways N can be
+written as a sum of at least two positive integers. We can reinterpret this
+question as finding the number of solutions to the equation
+
+N = k_1 * 1 + k_2 * 2 + k_3 * 3 + ... + k_(N-1) * (N - 1)
+
+where k_i >= 0 for all i. Notice that we do not include the term k_N * N, since
+we do not want to count the case where N is written as the sum of one positive
+integer, i.e. itself, N.
+
+For example, for N = 5, we want to find the number of ways to solve the
+equation
+
+N = k_1 * 1 + k_2 * 2 + k_3 * 3 + k_4 * 4
+
+where k_i >= 0 for all i.
+
+My strategy to solve this problem is to recursively loop through all reasonable
+values for k_i for all i, and count the number of summations in which the sum
+is exactly N.
+
+Let us consider the example where N = 5. 
+
+First, we give k_1 each possible value it can have, i.e. 0, 1, 2, 3, 4 and 5,
+for our sum to not exceed N = 5. 
+
+For each value of k_1, we give k_2 each possible value it can have for our sum
+k_1 * 1 + k_2 * 2 to not exceed N = 5.
+
+For each value of k_2, we give k_3 each possible value it can have for our sum
+k_1 * 1 + k_2 * 2 + k_3 * 3 to not exceed N = 5.
+
+For each value of k_3, we give k_4 each possible value it can have for our sum
+k_1 * 1 + k_2 * 2 + k_3 * 3 + k_4 * 4 to not exceed N = 5. 
+
+Whenever we encounter a sum that equals N = 5, we increment a counter since we
+have found one unique solution to our equation.
+
+Whenever we encounter a sum that does not equal N = 5 and we have included k_4
+in our sum and are about to include the illegal term k_5 * 5 in our sum, we
+stop and do not count this chain as a solution.
+
+We can implement a solution like this in C like this:
+
+[code]
+#include <stdio.h>
+#include <string.h>
+
+#define N 5
+
+int counts_saved[N][N];
+
+int count(int sum, int n)
+{
+    if (sum == N)
+        return 1;
+    if (n == N)
+        return 0;
+
+    int k;
+    int c = 0;
+
+    for (k = 0; k <= (N - sum) / n; k++)
+        c += count(sum + k * n, n + 1);
+    
+    return c;
+}
+
+int main()
+{
+    printf("count = %d\n", count(0, 1));
+    return 0;
+}
+[/code]
+
+The function count(sum, n) is called with the parameter sum that keeps track of
+the sum of our chain up to, but not including, the term with k_n, i.e. k_1 * 1
++ k_2 * 2 + k_3 * 3 + ... + k_(n-1) * (n - 1), where n is the other parameter
+that the function is called with and represents the term that we are about to
+try to add to our chain sum. 
+
+This program finishes almost instantly for values of N up to around 50. For
+larger N, this program takes forever to finish. In order to solve the problem
+for even larger N, we make a really simple optimization.
+
+Whenever our function count(sum, n) is called with two values for sum and n
+that is has already been called with, it is unnecessary to calculate count(sum,
+n) again. Therefore, every time count(sum, n) is called with two particular
+values of sum and n, we store its return value in a table. When count(sum, n)
+is called again with the exact same values for sum and n, we simply check
+whether this result has already been computed, and if it is, we simply return
+it from our table. 
+
+This small and simple optimization reduces our program's running time
+dramatically, so it solves for N = 100 almost instantly. With this small
+modification, our program's code looks like this:
+
+[code]
+#include <stdio.h>
+#include <string.h>
+
+#define N 100
+
+int counts_saved[N][N];
+
+int count(int sum, int n)
+{
+    if (sum == N)
+        return 1;
+    if (n == N)
+        return 0;
+    if (counts_saved[sum][n] != -1)
+        return counts_saved[sum][n];
+
+    int k;
+    int c = 0;
+
+    for (k = 0; k <= (N - sum) / n; k++)
+        c += count(sum + k * n, n + 1);
+    
+    counts_saved[sum][n] = c;
+    return c;
+}
+
+int main()
+{
+    memset(counts_saved, -1, N * N * sizeof(int));
+    printf("count = %d\n", count(0, 1));
+    return 0;
+}
+[/code]
